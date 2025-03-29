@@ -1,11 +1,9 @@
-"use client";
-
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { RechartsBarProps } from "./rechartsBar.types";
 
 // Componente para gráficos de barras
 export default function RechartsBar(props: RechartsBarProps) {
-  
+
   const { data } = props
 
   return (
@@ -22,8 +20,8 @@ export default function RechartsBar(props: RechartsBarProps) {
           }}
           labelStyle={{ color: "#ffffff" }}
           formatter={(value, name) => [
-            <span style={{ color: "#ffffff" }}>Horas: {value}</span>,
-            <span style={{ color: "#ffffff" }}>{name}</span>
+            <span key={value.toString()} style={{ color: "#ffffff" }}>Horas: {value}</span>,
+            <span key={name} style={{ color: "#ffffff" }}>{name}</span>
           ]}
         />
         <Bar dataKey="hours" fill="#790a92" radius={[5, 5, 0, 0]} barSize={50} />

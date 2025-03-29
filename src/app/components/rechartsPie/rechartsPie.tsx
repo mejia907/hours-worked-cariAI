@@ -25,8 +25,8 @@ export default function RechartsPie(props: RechartsPieProps) {
         }}
         labelStyle={{ color: "#ffffff" }}
         formatter={(value, name) => [
-          <span style={{ color: "#ffffff" }}>Horas: {value}</span>,
-          <span style={{ color: "#ffffff" }}>{name}</span>
+          <span key={value.toString()} style={{ color: "#ffffff" }}>Horas: {value}</span>,
+          <span key={name} style={{ color: "#ffffff" }}>{name}</span>
         ]}
       />
       <Legend />
