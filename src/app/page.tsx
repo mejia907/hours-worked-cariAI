@@ -1,103 +1,179 @@
-import Image from "next/image";
+"use client"
+
+import { useState } from "react"
+import DatePicker from "react-datepicker"
+import Image from "next/image"
+import "react-datepicker/dist/react-datepicker.css"
+import { concepts } from "./data/concepts"
+import RechartsBar from "./components/rechartsBar/rechartsBar"
+import RechartsPie from "./components/rechartsPie/rechartsPie"
+
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // Hora de entrada y salida
+  const [attendanceIn, setAttendanceIn] = useState<Date | null>(null)
+  const [attendanceOut, setAttendanceOut] = useState<Date | null>(null)
+  // información de los conceptos y horas
+  const [data, setData] = useState<{ concept: string; hours: number }[]>([])
+  const [loading, setLoading] = useState(false)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+  // Función para manejar el envío del formulario
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!attendanceIn || !attendanceOut) {
+      alert("Debe seleccionar la hora de entrada y salida.")
+      return
+    }
+
+    // Formatear la hora en el formato de hora y minutos
+    const formatTime = (date: Date) => date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+
+    // Objeto con los datos del formulario que se enviará a la API
+    const formData = {
+      attendanceIn: formatTime(attendanceIn),
+      attendanceOut: formatTime(attendanceOut),
+      concepts,
+    }
+
+    setLoading(true)
+    try {
+      // Enviar la solicitud POST al proxy de la API
+      const response = await fetch("/api/proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+
+      
+      if (response.status !== 200) {
+        alert("Error al obtener datos")
+        setData([])
+        return
+      }
+
+      const result = await response.json()
+
+      // Formatear los datos para el gráfico
+      const formattedData = Object.entries(result).map(([concept, hours]) => ({
+        concept,
+        hours: Number(hours),
+      }))
+
+      setData(formattedData);
+    } catch (error) {
+      console.error("Error al obtener datos:", error)
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <main className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-gray-50 to-blue-100 p-6">
+      <div className="w-full max-w-3xl bg-white shadow-xl rounded-xl p-8 mx-auto">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-gray-900 p-4 rounded-full shadow-lg">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src="https://site.cariai.com/wp-content/uploads/2023/04/Elementos-Web-2023_Cari-AI-White.svg"
+              alt="Mi Logo"
+              width={140}
+              height={140}
+              className="drop-shadow-lg"
             />
-            Deploy now
-          </a>
+          </div>
+        </div>
+
+        <h1 className="text-2xl font-extrabold text-center text-gray-900 mb-6">
+          Cálculo de Horas Trabajadas
+        </h1>
+
+        {/* Filtros */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="md:flex md:space-x-4">
+            <div className="flex-1">
+              <label className="block font-medium text-gray-700 mb-2">Hora de Entrada:</label>
+              <DatePicker
+                selected={attendanceIn}
+                onChange={(date) => {
+                  setAttendanceIn(date);
+                  // Limpiar gráfico al cambiar valores
+                  setData([]);
+                }}
+                showTimeSelect
+                showTimeSelectOnly
+                timeIntervals={15}
+                timeCaption="Hora"
+                dateFormat="HH:mm"
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="flex-1">
+              <label className="block font-medium text-gray-700 mb-2">Hora de Salida:</label>
+              <DatePicker
+                selected={attendanceOut}
+                onChange={(date) => {
+                  setAttendanceOut(date);
+                  // Limpiar gráfico al cambiar valores
+                  setData([]);
+                }}
+                showTimeSelect
+                showTimeSelectOnly
+                timeIntervals={15}
+                timeCaption="Hora"
+                dateFormat="HH:mm"
+                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-purple-700 text-white py-3 rounded-lg shadow-md hover:bg-purple-800 transition duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            Calcular Horas
+          </button>
+        </form>
+
+        {loading && <p className="text-center mt-6 text-gray-600">Cargando datos...</p>}
+
+        {!loading && data.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-semibold text-center text-gray-900 mb-6">Resultados</h2>
+
+            {/* Gráficos */}
+            <div className="md:flex md:space-x-4">
+              <div className="flex-1">
+                <RechartsBar data={data} />
+              </div>
+
+              <div className="flex-1">
+                <RechartsPie data={data} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <footer className="w-full text-center py-4 bg-gray-900 text-white text-sm mt-8 rounded-2xl">
+        <p className="text-gray-300">
+          Desarrollado por
+          <span className="font-semibold text-purple-400 mx-1">
+            Andrés Felipe Mejía R.
+          </span>
+          |{" "}
           <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://andresmejia.dev"
             target="_blank"
             rel="noopener noreferrer"
+            className="text-purple-400 hover:text-purple-300 transition-colors duration-300"
           >
-            Read our docs
+            andresmejia.dev
           </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        </p>
       </footer>
-    </div>
-  );
+    </main>
+  )
 }
